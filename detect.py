@@ -40,7 +40,11 @@ def main(_argv):
     session = InteractiveSession(config=config)
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
     input_size = FLAGS.size
-    images = FLAGS.images
+    files_in_directory = os.listdir(FLAGS.images[0])
+    filtered_files = [file for file in files_in_directory if file.endswith(".jpg")]
+    images = filtered_files
+
+    
 
     # load model
     if FLAGS.framework == 'tflite':
@@ -50,7 +54,10 @@ def main(_argv):
 
     # loop through images in list and run Yolov4 model on each
     for count, image_path in enumerate(images, 1):
-        original_image = cv2.imread(image_path)
+#         print("count", count)
+#         print("image ",image_path )
+        
+        original_image = cv2.imread(os.path.join("./data3",image_path))
         original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
 
         image_data = cv2.resize(original_image, (input_size, input_size))
@@ -113,12 +120,15 @@ def main(_argv):
 
         # if crop flag is enabled, crop each detection and save it as new image
         if FLAGS.crop:
-            crop_path = os.path.join(os.getcwd(), 'detections', 'crop', image_name)
+#             crop_path = os.path.join(os.getcwd(), 'detections', 'crop', image_name)
+            crop_path = os.path.join(os.getcwd(), 'detections', 'crop2')
+         
             try:
                 os.mkdir(crop_path)
             except FileExistsError:
                 pass
-            crop_objects(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB), pred_bbox, crop_path, allowed_classes)
+            
+            crop_objects(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB), pred_bbox, crop_path, allowed_classes, count ,image_path )
 
         # if ocr flag is enabled, perform general text extraction using Tesseract OCR on object detection bounding box
         if FLAGS.ocr:
@@ -137,7 +147,9 @@ def main(_argv):
         
         image = Image.fromarray(image.astype(np.uint8))
         if not FLAGS.dont_show:
-            image.show()
+            pass 
+#             image.show()
+
         image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
         cv2.imwrite(FLAGS.output + 'detection' + str(count) + '.png', image)
 

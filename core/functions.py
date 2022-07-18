@@ -6,7 +6,7 @@ import tensorflow as tf
 import pytesseract
 from core.utils import read_class_names
 from core.config import cfg
-
+from csv import writer
 # function to count objects, can return total classes or count per class
 def count_objects(data, by_class = False, allowed_classes = list(read_class_names(cfg.YOLO.CLASSES).values())):
     boxes, scores, classes, num_objects = data
@@ -35,9 +35,11 @@ def count_objects(data, by_class = False, allowed_classes = list(read_class_name
     return counts
 
 # function for cropping each detection and saving as new image
-def crop_objects(img, data, path, allowed_classes):
+def crop_objects(img, data, path, allowed_classes, countt , image_act):
     boxes, scores, classes, num_objects = data
     class_names = read_class_names(cfg.YOLO.CLASSES)
+    width = img.shape[0]
+    height = img.shape[1]
     #create dictionary to hold count of objects for image name
     counts = dict()
     for i in range(num_objects):
@@ -48,11 +50,18 @@ def crop_objects(img, data, path, allowed_classes):
             counts[class_name] = counts.get(class_name, 0) + 1
             # get box coords
             xmin, ymin, xmax, ymax = boxes[i]
+            
             # crop detection from image (take an additional 5 pixels around all edges)
             cropped_img = img[int(ymin)-5:int(ymax)+5, int(xmin)-5:int(xmax)+5]
             # construct image name and join it to path for saving crop properly
-            img_name = class_name + '_' + str(counts[class_name]) + '.png'
+            img_name = class_name + '_' + str(counts[class_name]) + str(countt) +'.png'
             img_path = os.path.join(path, img_name )
+            # save the label coordinate into csv
+            list_data=[image_act,width,height, allowed_classes[0],xmin, ymin, xmax, ymax]
+            with open('./_annotations.csv', 'a', newline='') as f_object:  
+                writer_object = writer(f_object)
+                writer_object.writerow(list_data)  
+                f_object.close()
             # save image
             cv2.imwrite(img_path, cropped_img)
         else:
